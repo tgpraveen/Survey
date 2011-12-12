@@ -1,6 +1,21 @@
+import cgi
+import datetime
+import urllib
+import webapp2
+
+from google.appengine.ext import db
+from google.appengine.api import users
 import webapp2
 
 from google.appengine.api import users
+
+class Survey(db.Model):
+  """Models an individual Guestbook entry with an author, content, and date."""
+  creator = db.UserProperty()
+  name = db.StringProperty()
+  #content = db.StringProperty(multiline=True)
+  date = db.DateTimeProperty(auto_now_add=True)
+
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
