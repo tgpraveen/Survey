@@ -63,7 +63,7 @@ class Create2(webapp2.RequestHandler):
         if user:
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
-            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            self.response.out.write("<html><body>%s<br><br>" % greeting)
             self.response.out.write('Creating Survey:- ')
             self.response.out.write(cgi.escape(self.request.get('surveyname')))
             noofques = int(cgi.escape(self.request.get('noofques')))
@@ -74,16 +74,17 @@ class Create2(webapp2.RequestHandler):
              # self.response.out.write(range(noofques))
             #else:
              # self.response.out.write("Hey"+noofques)
-                
+            self.response.out.write("<h5> For those options where you are going to use images, don't write anything in the textbox.</h5>")
             for quesno in range(1,noofques+1):
-              self.response.out.write("""Question %s:- <input type=text name=question%s>""" % (quesno,quesno))                        
-             if useimages=="n":                        
-              for optionno in range(1,noofoptions+1):
-               # self.response.out.write("""Option """+(optionno)+""":- <input type=text name=option"""+(optionno)+""">""")
-             #elif useimages=="y":
-              #for optionno in range(noofoptions):
-               # self.response.out.write("""Option """+(optionno)+""":- <input type=text name=option"""+(optionno)+""">
-            #                <input type="file" name=optionfile"""+(optionno)+""" />""")
+              self.response.out.write("""Question %s:- <input type=text name=question%s><br>""" % (quesno,quesno))                        
+              if useimages=="n":                        
+                for optionno in range(1,noofoptions+1):
+                  self.response.out.write("""Option %s:- <input type=text name=option%s><br>""" % (optionno,optionno))
+                self.response.out.write("<br><br>")
+              elif useimages=="y":
+                for optionno in range(1,noofoptions+1):
+                  self.response.out.write("""<pre>Option %s:- <input type=text name=option%s>            <input type="file" name=optionfile%s/><br></pre>""" % (optionno,optionno,optionno))
+                self.response.out.write("<br><br>")
             
             self.response.out.write("""<br><br><input type="submit" value="Create Survey"><input type="reset" value="Clear Form"></form>""")
             self.response.out.write("</body></html>")
