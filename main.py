@@ -64,6 +64,20 @@ class Create2(webapp2.RequestHandler):
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s<br><br>" % greeting)
+            surveyname =cgi.escape(self.request.get('surveyname'))
+            dbsurveys = db.GqlQuery("SELECT * "
+                            "FROM Survey ")
+            self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM>")
+            for cntr in dbsurveys:
+              if cntr.name == surveyname:
+                self.response.out.write("That Survey name --> <b>'%s'</b> is already used please some other survey name." % surveyname)
+                self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM>")
+                return;
+                
+            newsurvey=Survey(creator = users.get_current_user(),name=surveyname)
+            newsurvey.put()
+            self.response.out.write("Done")
+            
             self.response.out.write('Creating Survey:- ')
             self.response.out.write(cgi.escape(self.request.get('surveyname')))
             noofques = int(cgi.escape(self.request.get('noofques')))
@@ -85,7 +99,8 @@ class Create2(webapp2.RequestHandler):
                 for optionno in range(1,noofoptions+1):
                   self.response.out.write("""<pre>Option %s:- <input type=text name=option%s>            <input type="file" name=optionfile%s/><br></pre>""" % (optionno,optionno,optionno))
                 self.response.out.write("<br><br>")
-            
+            self.response.out.write("""<input type=hidden name=surveynamehidden value='%s'>""" % (surveyname))
+            self.response.out.write("""<input type=hidden name=useimageshidden value=%s>""" % useimages)
             self.response.out.write("""<br><br><input type="submit" value="Create Survey"><input type="reset" value="Clear Form"></form>""")
             self.response.out.write("</body></html>")
         else:
@@ -99,7 +114,7 @@ class Create3(webapp2.RequestHandler):
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s<br><br>" % greeting)
             self.response.out.write('Creating Survey:- ')
-            self.response.out.write(cgi.escape(self.request.get('surveyname')))
+            self.response.out.write(cgi.escape(self.request.get('surveynamehidden')))
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
