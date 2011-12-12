@@ -25,8 +25,15 @@ class MainPage(webapp2.RequestHandler):
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s</body></html>" % greeting)
             
-            self.response.out.write("""<br><br><br><br><br><br><div style="background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
-            <style align=centre><h3>Create a new survey.</h3></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br><div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
+            <a href='/create'><h3>Create a new survey.</h3></a></div></style>""")
+
+            self.response.out.write("""<div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
+            <a href='/vote'><h3>Vote on the survey of all the users.</h3></a></div>""")
+
+            self.response.out.write("""<div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
+            <a href='/create'><h3>Create a new survey.</h3></a></div>""")
+     
         else:
             self.redirect(users.create_login_url(self.request.uri))
             
