@@ -29,15 +29,13 @@ class MainPage(webapp2.RequestHandler):
             <a href='/create'><h3>Create a new survey.</h3></a></div></style>""")
 
             self.response.out.write("""<div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
-            <a href='/vote'><h3>Vote on the survey of all the users.</h3></a></div>""")
+            <a href='/edit'><h3>Edit surveys created by you.</h3></a></div>""")
 
             self.response.out.write("""<div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
-            <a href='/create'><h3>Create a new survey.</h3></a></div>""")
+            <a href='/vote'><h3>Vote on/View results of the surveys of all the users.</h3></a></div>""")
      
         else:
             self.redirect(users.create_login_url(self.request.uri))
-            
-
         
 
 app = webapp2.WSGIApplication([('/', MainPage)],
