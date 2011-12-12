@@ -30,7 +30,7 @@ class MainPage(webapp2.RequestHandler):
 
             self.response.out.write("""<div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
             <a href='/edit'><h3>Edit surveys created by you.</h3></a></div>""")
-
+  
             self.response.out.write("""<div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
             <a href='/vote'><h3>Vote on/View results of the surveys of all the users.</h3></a></div>""")
             self.response.out.write("</body></html>") 
@@ -66,6 +66,26 @@ class Create2(webapp2.RequestHandler):
             self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
             self.response.out.write('Creating Survey:- ')
             self.response.out.write(cgi.escape(self.request.get('surveyname')))
+            noofques = int(cgi.escape(self.request.get('noofques')))
+            noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
+            useimages = cgi.escape(self.request.get('useimages'))
+            self.response.out.write("""<form name=createform2 action="/create3" method="post">""")
+            #if noofques==6:
+             # self.response.out.write(range(noofques))
+            #else:
+             # self.response.out.write("Hey"+noofques)
+                
+            for quesno in range(1,noofques+1):
+              self.response.out.write("""Question %s:- <input type=text name=question%s>""" % (quesno,quesno))                        
+             if useimages=="n":                        
+              for optionno in range(1,noofoptions+1):
+               # self.response.out.write("""Option """+(optionno)+""":- <input type=text name=option"""+(optionno)+""">""")
+             #elif useimages=="y":
+              #for optionno in range(noofoptions):
+               # self.response.out.write("""Option """+(optionno)+""":- <input type=text name=option"""+(optionno)+""">
+            #                <input type="file" name=optionfile"""+(optionno)+""" />""")
+            
+            self.response.out.write("""<br><br><input type="submit" value="Create Survey"><input type="reset" value="Clear Form"></form>""")
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
