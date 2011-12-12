@@ -24,6 +24,9 @@ class MainPage(webapp2.RequestHandler):
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s</body></html>" % greeting)
+            
+            self.response.out.write("""<br><br><br><br><br><br><div style="background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
+            <style align=centre><h3>Create a new survey.</h3></style></div>""")
         else:
             self.redirect(users.create_login_url(self.request.uri))
             
