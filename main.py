@@ -9,12 +9,17 @@ import webapp2
 
 from google.appengine.api import users
 
-class Survey(db.Model):
+class SurveyList(db.Model):
   """Models an individual Guestbook entry with an author, content, and date."""
   creator = db.UserProperty()
   name = db.StringProperty()
   #content = db.StringProperty(multiline=True)
   date = db.DateTimeProperty(auto_now_add=True)
+  
+class Survey(db.Model):
+  surveyid = db.StringProperty()
+  question = db.StringProperty()
+  option =  db.StringListProperty()
 
 
 class MainPage(webapp2.RequestHandler):
@@ -66,24 +71,24 @@ class Create2(webapp2.RequestHandler):
             self.response.out.write("<html><body>%s<br><br>" % greeting)
             surveyname =cgi.escape(self.request.get('surveyname'))
             dbsurveys = db.GqlQuery("SELECT * "
-                            "FROM Survey ")
-            self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM>")
+                            "FROM SurveyList ")
+            
             for cntr in dbsurveys:
               if cntr.name == surveyname:
-                self.response.out.write("That Survey name --> <b>'%s'</b> is already used please some other survey name." % surveyname)
+                self.response.out.write("<h3>That Survey name --> <b>'%s'</b> is already used please some other survey name.</h3>" % surveyname)
                 self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM>")
                 return;
                 
-            newsurvey=Survey(creator = users.get_current_user(),name=surveyname)
+            newsurvey=SurveyList(creator = users.get_current_user(),name=surveyname)
             newsurvey.put()
-            self.response.out.write("Done")
+            #self.response.out.write("Done")
             
             self.response.out.write('Creating Survey:- ')
             self.response.out.write(cgi.escape(self.request.get('surveyname')))
             noofques = int(cgi.escape(self.request.get('noofques')))
             noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
             useimages = cgi.escape(self.request.get('useimages'))
-            self.response.out.write("""<form name=createform2 action="/create3" method="post">""")
+            self.response.out.write("""<form name=createform2 action="/create3" enctype="multipart/form-data" method="post">""")
             #if noofques==6:
              # self.response.out.write(range(noofques))
             #else:
@@ -101,6 +106,8 @@ class Create2(webapp2.RequestHandler):
                 self.response.out.write("<br><br>")
             self.response.out.write("""<input type=hidden name=surveynamehidden value='%s'>""" % (surveyname))
             self.response.out.write("""<input type=hidden name=useimageshidden value=%s>""" % useimages)
+            self.response.out.write("""<input type=hidden name=noofoptionshidden value=%s>""" % noofoptions)
+            self.response.out.write("""<input type=hidden name=noofqueshidden value=%s>""" % noofques)
             self.response.out.write("""<br><br><input type="submit" value="Create Survey"><input type="reset" value="Clear Form"></form>""")
             self.response.out.write("</body></html>")
         else:
@@ -114,7 +121,20 @@ class Create3(webapp2.RequestHandler):
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s<br><br>" % greeting)
             self.response.out.write('Creating Survey:- ')
-            self.response.out.write(cgi.escape(self.request.get('surveynamehidden')))
+            surveyname=cgi.escape(self.request.get('surveynamehidden'))
+            self.response.out.write(surveyname)
+            #surveykeylist=db.GqlQuery("SELECT * "
+            #                "FROM SurveyList "
+            #                "WHERE name=:1",surveyname)
+            #for cntr in surveykeylist:
+            #  currentsurveykey=cntr.key()
+               #self.response.out.write("%s" % cntr.key())
+
+            useimages=cgi.escape(self.request.get('useimageshidden'))
+            noofques=int(cgi.escape(self.request.get('noofqueshidden')))
+            noofoptions=int(cgi.escape(self.request.get('noofoptionshidden')))
+            for cntr in range(1,noofques+1):
+              surveyquestion=Survey(question=cgi.escape(self.request.get('questioncntr')))
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
