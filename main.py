@@ -16,10 +16,11 @@ class SurveyList(db.Model):
   #content = db.StringProperty(multiline=True)
   date = db.DateTimeProperty(auto_now_add=True)
   
-class Survey(db.Model):
+class Survey(db.Expando):
   surveyid = db.StringProperty()
   question = db.StringProperty()
-  option =  db.StringListProperty()
+  options =  db.StringListProperty()
+  surveyoption = db.BlobProperty()
 
 
 class MainPage(webapp2.RequestHandler):
@@ -113,6 +114,17 @@ class Create2(webapp2.RequestHandler):
         else:
             self.redirect(users.create_login_url(self.request.uri))
 
+class Image1(webapp2.RequestHandler):
+    def get(self):
+        greeting1 = db.get(self.request.get("img_id"))
+        self.response.out.write("Hi")
+        if greeting1.optionpic:
+            self.response.headers['Content-Type'] = "image/png"
+            self.response.out.write(greeting1.optionpic)
+            
+        else:
+            self.response.out.write("No image")
+            
 class Create3(webapp2.RequestHandler):
     def post(self):
         user = users.get_current_user()
@@ -133,8 +145,58 @@ class Create3(webapp2.RequestHandler):
             useimages=cgi.escape(self.request.get('useimageshidden'))
             noofques=int(cgi.escape(self.request.get('noofqueshidden')))
             noofoptions=int(cgi.escape(self.request.get('noofoptionshidden')))
+            #self.response.out.write("<br>Hi %sabc" % useimages)
             for cntr in range(1,noofques+1):
-              surveyquestion=Survey(question=cgi.escape(self.request.get('questioncntr')))
+              currentquesno="question" + str(cntr)
+              surveyquestion=Survey(question=cgi.escape(self.request.get(currentquesno)))
+              if useimages == "n":                  
+                  for innercntr in range(1,noofoptions+1):
+                      currentoption="option" + str(innercntr)
+                      #self.response.out.write("<br>Hi %s" % currentoption)
+                      surveyquestion.options.append(cgi.escape(self.request.get(currentoption)))
+                  #self.response.out.write("<br>eoq")
+                  surveyquestion.put()
+              elif useimages == "y":
+                for innercntr in range(1,noofoptions+1):
+                      currentoption="option" + str(innercntr)
+                      surveyquestion.options.append(cgi.escape(self.request.get(currentoption)))
+                      if cgi.escape(self.request.get(currentoption)) != "":
+                        surveyquestion.options.append(cgi.escape(self.request.get(currentoption)))
+                      else:
+                        currentoptionfile="optionfile" + str(innercntr)
+                        optionpic = self.request.get(currentoptionfile)
+                        surveyquestion.optionpic = db.Blob(optionpic)
+                #self.response.headers['Content-Type'] = "image/png"
+                #self.response.out.write(surveyquestion.optionpic)
+                surveyquestion.put()
+
+
+                pict = db.GqlQuery("SELECT * "
+                                "FROM Survey ")
+                for pictcntr in pict:
+                    self.response.out.write("<div><img src='/img1?img_id=%s'></img></div>" % pictcntr.key())
+                    #Not working above inserting/showing pics.        
+                    #greet = db.get(self.request.get(pictcntr.key()))
+                    #self.response.out.write(greet.question)
+            self.response.out.write("<h3>Survey created. <a href='/'>Click here to go back.</a></h3>")
+            self.response.out.write("</body></html>")
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
+
+class Vote(webapp2.RequestHandler):
+    def get(self):
+        user = users.get_current_user()
+        if user:
+            greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
+                        (user.nickname(), users.create_logout_url("/")))
+            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            surveylist = db.GqlQuery("SELECT * "
+                                "FROM SurveyList")
+
+            for cntr in surveylist:
+              self.response.out.write(cntr.name)
+
+            
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
@@ -142,5 +204,7 @@ class Create3(webapp2.RequestHandler):
 app = webapp2.WSGIApplication([('/', MainPage),
                                ('/create1', Create1),
                                ('/create2', Create2),
-                               ('/create3', Create3)],
+                               ('/create3', Create3),
+                               ('/img1', Image1),
+                               ('/vote', Vote)],
                               debug=True)
