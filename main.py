@@ -10,7 +10,6 @@ import webapp2
 from google.appengine.api import users
 
 class SurveyList(db.Model):
-  """Models an individual Guestbook entry with an author, content, and date."""
   creator = db.UserProperty()
   name = db.StringProperty()
   #content = db.StringProperty(multiline=True)
@@ -21,6 +20,12 @@ class Survey(db.Expando):
   question = db.StringProperty()
   options =  db.StringListProperty()
   surveyoption = db.BlobProperty()
+
+class Votes(db.Expando):
+  surveyid = db.StringProperty()
+  voter = db.UserProperty()
+  question = db.StringProperty()
+  chosenoption = db.StringProperty()
 
 
 class MainPage(webapp2.RequestHandler):
@@ -216,18 +221,52 @@ class Vote2(webapp2.RequestHandler):
                                 "WHERE surveyid=:1 ", surveyname1)
             i=1
             j=1
-            self.response.out.write("<form name=actualvote action='/vote3'>")
+            self.response.out.write("<form name=actualvote action='/vote3' method='POST'>")
             for cntr1 in questionlist:
               self.response.out.write("<br>Q:- %s" % cntr1.question)
               i=1
               for cntr2 in cntr1.options:
-                self.response.out.write("<br><input type=radio name=q%so%s value=%s>%s</input>" % (j,i,cntr1.options[i-1],cntr1.options[i-1]))
+                self.response.out.write("<br><input type=radio name=oq%s value=%s>%s</input>" % (j,cntr1.options[i-1],cntr1.options[i-1]))
                 i+=1
               j+=1
+              
+            #self.response.out.write("<input type=hidden name=hiddennoofques value=%s>" % count(questionlist))
+            self.response.out.write("<input type=hidden name=hiddensurveyname value=%s>" % surveyname1)
+            self.response.out.write("<br><input type=submit value='Vote'><input type='reset' value='Clear Form'>")                
+            self.response.out.write("</form>")
+            self.response.out.write("</body></html>")
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
+
+class Vote3(webapp2.RequestHandler):
+    def post(self):
+        user = users.get_current_user()
+        if user:
+            greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
+                        (user.nickname(), users.create_logout_url("/")))
+            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            surveyname1 = self.request.get('hiddensurveyname')
+            #noofques = self.request.get('hiddennoofques')
+            questionlist = db.GqlQuery("SELECT * "
+                                "FROM Survey "
+                                "WHERE surveyid=:1 ", surveyname1)
+            self.response.out.write("Viewing survey:- %s" % surveyname1)
+            j=1
+            for crntques in questionlist:
+                currentvote=Votes(voter=user, surveyid=surveyname1, question=crntques.question)
+                oq="oq"+str(j)
+                currentvote.chosenoption=self.request.get(oq)
+                currentvote.put()
+                j=j+1
+            #self.response.out.write("Voting done.")
+            
+            
+
             
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
+            
             
             
 app = webapp2.WSGIApplication([('/', MainPage),
@@ -236,5 +275,6 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/create3', Create3),
                                ('/img1', Image1),
                                ('/vote', Vote),
-                               ('/vote2', Vote2)],
+                               ('/vote2', Vote2),
+                               ('/vote3', Vote3)],
                               debug=True)
