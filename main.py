@@ -377,7 +377,7 @@ class Edit2(webapp2.RequestHandler):
             noofques=0
             for cnts in questionlist:
               noofques+=1
-            self.response.out.write("Hey folks! %s" % noofques)
+            #self.response.out.write("Hey folks! %s" % noofques)
             for abcd in questionlist:
               noofoptions=int(len(abcd.options))
               break
@@ -437,9 +437,6 @@ class Edit2(webapp2.RequestHandler):
             self.response.out.write("""<input type=hidden name=noofoptionshidden value=%s>""" % noofoptions)
             self.response.out.write("""<input type=hidden name=noofqueshidden value=%s>""" % noofques)
             self.response.out.write("""<br><br><input type="submit" value="Modify Survey"><input type="reset" value="Clear Form"></form>""")
-
-            
-            self.response.out.write("<h3>Survey modified. <a href='/'>Click here to go back.</a></h3>")
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
@@ -451,7 +448,7 @@ class Edit3(webapp2.RequestHandler):
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s<br><br>" % greeting)
-            self.response.out.write('Creating Survey:- ')
+            self.response.out.write('Modifying Survey:- ')
             surveyname=cgi.escape(self.request.get('surveynamehidden'))
             self.response.out.write(surveyname)
             #surveykeylist=db.GqlQuery("SELECT * "
@@ -460,7 +457,10 @@ class Edit3(webapp2.RequestHandler):
             #for cntr in surveykeylist:
             #  currentsurveykey=cntr.key()
                #self.response.out.write("%s" % cntr.key())
-
+            abc123= db.GqlQuery("SELECT * "
+                             "FROM Survey "
+                             "WHERE surveyid=:1",surveyname)
+            db.delete(abc123)
             useimages=cgi.escape(self.request.get('useimageshidden'))
             noofques=int(cgi.escape(self.request.get('noofqueshidden')))
             noofoptions=int(cgi.escape(self.request.get('noofoptionshidden')))
@@ -497,7 +497,7 @@ class Edit3(webapp2.RequestHandler):
                     #Not working above inserting/showing pics.        
                     #greet = db.get(self.request.get(pictcntr.key()))
                     #self.response.out.write(greet.question)
-            self.response.out.write("<h3>Survey created. <a href='/'>Click here to go back.</a></h3>")
+            self.response.out.write("<h3>Survey modified. <a href='/'>Click here to go back.</a></h3>")
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
