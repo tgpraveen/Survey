@@ -148,7 +148,7 @@ class Create3(webapp2.RequestHandler):
             #self.response.out.write("<br>Hi %sabc" % useimages)
             for cntr in range(1,noofques+1):
               currentquesno="question" + str(cntr)
-              surveyquestion=Survey(question=cgi.escape(self.request.get(currentquesno)))
+              surveyquestion=Survey(question=cgi.escape(self.request.get(currentquesno)),surveyid=surveyname)
               if useimages == "n":                  
                   for innercntr in range(1,noofoptions+1):
                       currentoption="option" + str(innercntr)
@@ -193,18 +193,48 @@ class Vote(webapp2.RequestHandler):
             surveylist = db.GqlQuery("SELECT * "
                                 "FROM SurveyList")
 
+            self.response.out.write("<center>Please selct from one of the following surveys:-")
+            #self.response.out.write("<form name=voteform1 action='/voteform2'>")
             for cntr in surveylist:
-              self.response.out.write(cntr.name)
+              self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+            self.response.out.write("</center>")            
+            self.response.out.write("</body></html>")
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
 
+class Vote2(webapp2.RequestHandler):
+    def get(self):
+        user = users.get_current_user()
+        if user:
+            greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
+                        (user.nickname(), users.create_logout_url("/")))
+            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            surveyname1 = self.request.get('surveyname')
+            self.response.out.write("Viewing survey:- %s" % surveyname1)
+            questionlist = db.GqlQuery("SELECT * "
+                                "FROM Survey "
+                                "WHERE surveyid=:1 ", surveyname1)
+            i=1
+            j=1
+            self.response.out.write("<form name=actualvote action='/vote3'>")
+            for cntr1 in questionlist:
+              self.response.out.write("<br>Q:- %s" % cntr1.question)
+              i=1
+              for cntr2 in cntr1.options:
+                self.response.out.write("<br><input type=radio name=q%so%s value=%s>%s</input>" % (j,i,cntr1.options[i-1],cntr1.options[i-1]))
+                i+=1
+              j+=1
             
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
+            
             
 app = webapp2.WSGIApplication([('/', MainPage),
                                ('/create1', Create1),
                                ('/create2', Create2),
                                ('/create3', Create3),
                                ('/img1', Image1),
-                               ('/vote', Vote)],
+                               ('/vote', Vote),
+                               ('/vote2', Vote2)],
                               debug=True)
