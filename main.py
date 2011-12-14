@@ -99,11 +99,11 @@ class Create2(webapp2.RequestHandler):
               self.response.out.write("""Question %s:- <input type=text name=question%s><br>""" % (quesno,quesno))                        
               if useimages=="n":                        
                 for optionno in range(1,noofoptions+1):
-                  self.response.out.write("""Option %s:- <input type=text name=option%s><br>""" % (optionno,optionno))
+                  self.response.out.write("""Option %s:- <input type=text name=q%soption%s><br>""" % (optionno,quesno,optionno))
                 self.response.out.write("<br><br>")
               elif useimages=="y":
                 for optionno in range(1,noofoptions+1):
-                  self.response.out.write("""<pre>Option %s:- <input type=text name=option%s>            <input type="file" name=optionfile%s/><br></pre>""" % (optionno,optionno,optionno))
+                  self.response.out.write("""<pre>Option %s:- <input type=text name=q%soption%s>            <input type="file" name=q%soptionfile%s/><br></pre>""" % (optionno,quesno,optionno,quesno,optionno))
                 self.response.out.write("<br><br>")
             self.response.out.write("""<input type=hidden name=surveynamehidden value='%s'>""" % (surveyname))
             self.response.out.write("""<input type=hidden name=useimageshidden value=%s>""" % useimages)
@@ -151,19 +151,19 @@ class Create3(webapp2.RequestHandler):
               surveyquestion=Survey(question=cgi.escape(self.request.get(currentquesno)),surveyid=surveyname)
               if useimages == "n":                  
                   for innercntr in range(1,noofoptions+1):
-                      currentoption="option" + str(innercntr)
+                      currentoption="q"+str(cntr)+"option" + str(innercntr)
                       #self.response.out.write("<br>Hi %s" % currentoption)
                       surveyquestion.options.append(cgi.escape(self.request.get(currentoption)))
                   #self.response.out.write("<br>eoq")
                   surveyquestion.put()
               elif useimages == "y":
                 for innercntr in range(1,noofoptions+1):
-                      currentoption="option" + str(innercntr)
+                      currentoption="q"+str(cntr)+"option" + str(innercntr)
                       surveyquestion.options.append(cgi.escape(self.request.get(currentoption)))
                       if cgi.escape(self.request.get(currentoption)) != "":
                         surveyquestion.options.append(cgi.escape(self.request.get(currentoption)))
                       else:
-                        currentoptionfile="optionfile" + str(innercntr)
+                        currentoptionfile="q"+cntr+"optionfile" + str(innercntr)
                         optionpic = self.request.get(currentoptionfile)
                         surveyquestion.optionpic = db.Blob(optionpic)
                 #self.response.headers['Content-Type'] = "image/png"
