@@ -186,7 +186,7 @@ class Create3(webapp2.RequestHandler):
                     #Not working above inserting/showing pics.        
                     #greet = db.get(self.request.get(pictcntr.key()))
                     #self.response.out.write(greet.question)
-            self.response.out.write("<h3>Survey created. <a href='/'>Click here to go back.</a></h3>")
+            self.response.out.write("<h3>Survey created. <a href='/Create3'>Click here to go back.</a></h3>")
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
@@ -201,7 +201,7 @@ class Vote(webapp2.RequestHandler):
             surveylist = db.GqlQuery("SELECT * "
                                 "FROM SurveyList")
 
-            self.response.out.write("<center>Please selct from one of the following surveys:-")
+            self.response.out.write("<center>Please select from one of the following surveys:-")
             #self.response.out.write("<form name=voteform1 action='/voteform2'>")
             for cntr in surveylist:
               self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
@@ -253,13 +253,32 @@ class Vote3(webapp2.RequestHandler):
             questionlist = db.GqlQuery("SELECT * "
                                 "FROM Survey "
                                 "WHERE surveyid=:1 ", surveyname1)
+            currentvotes=db.GqlQuery("SELECT * "
+                                "FROM Votes "
+                                "WHERE surveyid=:1 ", surveyname1)
             self.response.out.write("Viewing survey:- %s" % surveyname1)
             j=1
             for crntques in questionlist:
                 currentvote=Votes(voter=user, surveyid=surveyname1, question=crntques.question)
                 oq="oq"+str(j)
                 currentvote.chosenoption=self.request.get(oq)
-                currentvote.put()
+                oldquery=db.GqlQuery("SELECT * "
+                                     "FROM Votes "
+                                     "WHERE surveyid=:1 AND voter=:2 AND question=:3 AND chosenoption=:4 ", surveyname1, user, crntques.question, self.request.get(oq))
+                duplicatevote=0
+                for count9 in oldquery:
+                  if currentvote.surveyid==count9.surveyid and currentvote.voter==count9.voter and currentvote.question==count9.question and currentvote.chosenoption==count9.chosenoption:
+                      self.response.out.write("<center><h2> I have detected that you are trying to vote multiple times for the same option.  I'm sorry, %s. I'm afraid I can't let you do this.</h2>" % user.nickname())
+                      self. response.out.write("These questions you tried to vote the same option multiple times.")
+                      self.response.out.write("<br> %s"% currentvote.question)
+                      duplicatevote=1
+                      
+                if duplicatevote == 0:
+                    currentvote.put()
+                elif duplicatevote==1:
+                  self.response.out.write("<h3>Click the button to go back and don't try to cheat again!.</a></center>")
+                  self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM>")
+                  return
                 j=j+1
             self.response.out.write("<br>Voting done.<br><a href='/'> Click here to go to main menu.</a>")
             
@@ -497,7 +516,7 @@ class Edit3(webapp2.RequestHandler):
                     #Not working above inserting/showing pics.        
                     #greet = db.get(self.request.get(pictcntr.key()))
                     #self.response.out.write(greet.question)
-            self.response.out.write("<h3>Survey modified. <a href='/'>Click here to go back.</a></h3>")
+            self.response.out.write("<h3>Survey modified. <a href='/'>Click here to go to main menu..</a></h3>")
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
