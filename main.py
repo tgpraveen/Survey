@@ -222,14 +222,29 @@ class Vote2(webapp2.RequestHandler):
             questionlist = db.GqlQuery("SELECT * "
                                 "FROM Survey "
                                 "WHERE surveyid=:1 ", surveyname1)
+            
+            duplicatevote=0
+                                
             i=1
             j=1
             self.response.out.write("<form name=actualvote action='/vote3' method='POST'>")
             for cntr1 in questionlist:
+              oldqueryvote=db.GqlQuery("SELECT * "
+                                     "FROM Votes "
+                                     "WHERE surveyid=:1 AND voter=:2 AND question=:3", surveyname1, user, cntr1.question)
               self.response.out.write("<br>Q:- %s" % cntr1.question)
               i=1
+              
               for cntr2 in cntr1.options:
-                self.response.out.write("<br><input type=radio name=oq%s value=%s>%s</input>" % (j,cntr1.options[i-1],cntr1.options[i-1]))
+                alreadythere=0
+                for voteiter in oldqueryvote:
+                    if voteiter and voteiter.chosenoption==cntr1.options[i-1]:
+                          self.response.out.write("<br><input type=radio name=oq%s value=%s checked>%s</input>" % (j,cntr1.options[i-1],cntr1.options[i-1]))
+                          alreadythere=1
+                          break
+                      
+                if alreadythere==0:        
+                    self.response.out.write("<br><input type=radio name=oq%s value=%s>%s</input>" % (j,cntr1.options[i-1],cntr1.options[i-1]))
                 i+=1
               j+=1
               
@@ -258,28 +273,39 @@ class Vote3(webapp2.RequestHandler):
                                 "WHERE surveyid=:1 ", surveyname1)
             self.response.out.write("Viewing survey:- %s" % surveyname1)
             j=1
+            duplicatevote=0
+            duplicateoccuredever=0
             for crntques in questionlist:
+                duplicatevote=0
                 currentvote=Votes(voter=user, surveyid=surveyname1, question=crntques.question)
                 oq="oq"+str(j)
                 currentvote.chosenoption=self.request.get(oq)
                 oldquery=db.GqlQuery("SELECT * "
                                      "FROM Votes "
                                      "WHERE surveyid=:1 AND voter=:2 AND question=:3 AND chosenoption=:4 ", surveyname1, user, crntques.question, self.request.get(oq))
-                duplicatevote=0
+                duplicateoccurever=0
                 for count9 in oldquery:
-                  if currentvote.surveyid==count9.surveyid and currentvote.voter==count9.voter and currentvote.question==count9.question and currentvote.chosenoption==count9.chosenoption:
-                      self.response.out.write("<center><h2> I have detected that you are trying to vote multiple times for the same option.  I'm sorry, %s. I'm afraid I can't let you do this.</h2>" % user.nickname())
-                      self. response.out.write("These questions you tried to vote the same option multiple times.")
+                  if currentvote.chosenoption != "" and currentvote.surveyid==count9.surveyid and currentvote.voter==count9.voter and currentvote.question==count9.question and currentvote.chosenoption==count9.chosenoption:
+                      if duplicateoccuredever==0:
+                          self.response.out.write("<center><h3> If you changed your vote then it has gone through. But I have detected that you are trying to vote multiple times for the same option.  I'm sorry, %s. I'm afraid I can't let you do this.<br> So those votes I won't count again.</h3>" % user.nickname())
+                          self. response.out.write("These questions you tried to vote the same option multiple times.")
                       self.response.out.write("<br> %s"% currentvote.question)
                       duplicatevote=1
+                      duplicateoccuredever=1
                       
                 if duplicatevote == 0:
+                    oldquery2=db.GqlQuery("SELECT * "
+                                     "FROM Votes "
+                                     "WHERE surveyid=:1 AND voter=:2 AND question=:3 ", surveyname1, user, crntques.question)
+                    for cntr9 in oldquery2:
+                      db.delete(cntr9)
                     currentvote.put()
-                elif duplicatevote==1:
-                  self.response.out.write("<h3>Click the button to go back and don't try to cheat again!.</a></center>")
-                  self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM>")
-                  return
                 j=j+1
+                
+            if duplicateoccuredever==1:
+                  self.response.out.write("<h3>Click the button to go back.</a>")
+                  self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM></center>")
+                  return
             self.response.out.write("<br>Voting done.<br><a href='/'> Click here to go to main menu.</a>")
             
             
