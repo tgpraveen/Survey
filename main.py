@@ -36,6 +36,8 @@ class MainPage(webapp2.RequestHandler):
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s" % greeting)
             
+            self.response.out.write("""<div align=right>Search:-<form name='searchform' action='/search1' method='POST'><input type='text' name='searchkeyword'></form><div>""") 
+            
             self.response.out.write("""<br><br><br><br><br><br><div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
             <a href='/create1'><h3>Create a new survey.</h3></a></div></style>""")
 
@@ -47,6 +49,12 @@ class MainPage(webapp2.RequestHandler):
             
             self.response.out.write("""<div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
             <a href='/result1'><h3>View results of the surveys.</h3></a></div></style>""")
+
+            if user.nickname()=="test@example.com":
+              self.response.out.write("""<br><br><br><br><br><br><div style="float:left;"><h2>Special ADMINISTRATOR Section :- </h2></div></style>""")
+              self.response.out.write("""<br><br><br><br><br><br><div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
+            <a href='/adminedit1'><h3>Edit the survey created by ANY user.</h3></a></div></style>""")
+            
             self.response.out.write("</body></html>") 
         else:
             self.redirect(users.create_login_url(self.request.uri))
@@ -293,7 +301,7 @@ class Vote3(webapp2.RequestHandler):
                       duplicatevote=1
                       duplicateoccuredever=1
                       
-                if duplicatevote == 0:
+                if currentvote.chosenoption != "" and duplicatevote == 0:
                     oldquery2=db.GqlQuery("SELECT * "
                                      "FROM Votes "
                                      "WHERE surveyid=:1 AND voter=:2 AND question=:3 ", surveyname1, user, crntques.question)
@@ -387,9 +395,10 @@ class Edit1(webapp2.RequestHandler):
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
             surveylist = db.GqlQuery("SELECT * "
-                                "FROM SurveyList")
+                                "FROM SurveyList "
+                                "WHERE creator=:1 ", user)
             self.response.out.write("<h2>Selecting Survey to edit.</h2>")
-            self.response.out.write("<center>Please select from one of the following surveys:-")
+            self.response.out.write("<center>Please select from one of the following surveys created by you:-")
             #self.response.out.write("<form name=voteform1 action='/voteform2'>")
             for cntr in surveylist:
               self.response.out.write("<br><a href='/edit2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
@@ -546,7 +555,40 @@ class Edit3(webapp2.RequestHandler):
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
+
+class AdminEdit1(webapp2.RequestHandler):
+    def get(self):
+        user = users.get_current_user()
+        if user:
+            greeting = ("Welcome, %s! I know you are a <h3>ADMINISTRATOR</h3> (<a href=\"%s\">sign out</a>)" %
+                        (user.nickname(), users.create_logout_url("/")))
+            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            surveylist = db.GqlQuery("SELECT * "
+                                "FROM SurveyList ")
+            self.response.out.write("<h2>Selecting Survey to edit.</h2>")
+            self.response.out.write("<center>Please select from one of the following surveys :-")
+            #self.response.out.write("<form name=voteform1 action='/voteform2'>")
+            for cntr in surveylist:
+              self.response.out.write("<br><a href='/edit2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+            self.response.out.write("</center>")            
+            self.response.out.write("</body></html>")
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
+
+class Search1(webapp2.RequestHandler):
+    def post(self):
+        user = users.get_current_user()
+        if user:
+            greeting = ("Welcome, %s! I know you are a <h3>ADMINISTRATOR</h3> (<a href=\"%s\">sign out</a>)" %
+                        (user.nickname(), users.create_logout_url("/")))
+            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            self.response.out.write("<br><h2>Search:- </h2>")
+            searchword=cgi.escape(self.response.get('searchword'))
             
+            
+            self.response.out.write("</body></html>")
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
     
             
 app = webapp2.WSGIApplication([('/', MainPage),
@@ -561,5 +603,7 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/result2',Result2),
                                ('/edit1',Edit1),
                                ('/edit2',Edit2),
-                               ('/edit3',Edit3)],
+                               ('/edit3',Edit3),
+                               ('/adminedit1',AdminEdit1),
+                               ('/search1', Search1)],
                               debug=True)
