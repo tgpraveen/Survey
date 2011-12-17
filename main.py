@@ -77,6 +77,8 @@ class Create1(webapp2.RequestHandler):
             <input type=radio name=useimages value="y"> Yes
             <br> Set an expiry date:- <input type=radio name=expires value="n" checked> No
             <input type=radio name=expires value="y"> Yes
+            <br> Support user comments?:- <input type=radio name=supportusercomment value="n" checked> No
+            <input type=radio name=supportusercomment value="y"> Yes
             <br>Number of questions? <input type="text" name=noofques>
             <br>Number of options for each question? <input type="text" name=noofoptionsperques>
             
@@ -114,6 +116,7 @@ class Create2(webapp2.RequestHandler):
             noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
             useimages = cgi.escape(self.request.get('useimages'))
             expires = cgi.escape(self.request.get('expires'))
+            supportusrcmmnt=cgi.escape(self.request.get('supportusercomment'))
             self.response.out.write("""<form name=createform2 action="/create3" enctype="multipart/form-data" method="post">""")
             #if noofques==6:
              # self.response.out.write(range(noofques))
@@ -190,19 +193,24 @@ class Create2(webapp2.RequestHandler):
               </td></table>""")
             self.response.out.write("<h5> For those options where you are going to use images, don't write anything in the textbox AND upload the file using 'Choose file' option.</h5>")
             for quesno in range(1,noofques+1):
-              self.response.out.write("""Question %s:- <input type=text name=question%s><br>""" % (quesno,quesno))                        
+              self.response.out.write("""Question %s:- <input type=text name=question%s><br>""" % (quesno,quesno))
+              if supportusrcmmnt=="y":
+                    self.response.out.write("<div style='float:right'>User can enter comment for each question.</style></div>")
               if useimages=="n":                        
                 for optionno in range(1,noofoptions+1):
                   self.response.out.write("""Option %s:- <input type=text name=q%soption%s><br>""" % (optionno,quesno,optionno))
+              
                 self.response.out.write("<br><br>")
               elif useimages=="y":
                 for optionno in range(1,noofoptions+1):
                   self.response.out.write("""<pre>Option %s:- <input type=text name=q%soption%s>            <input type="file" name=q%soptionfile%s/><br></pre>""" % (optionno,quesno,optionno,quesno,optionno))
+                  
                 self.response.out.write("<br><br>")
             self.response.out.write("""<input type=hidden name=surveynamehidden value='%s'>""" % (surveyname))
             self.response.out.write("""<input type=hidden name=useimageshidden value=%s>""" % useimages)
             self.response.out.write("""<input type=hidden name=noofoptionshidden value=%s>""" % noofoptions)
             self.response.out.write("""<input type=hidden name=noofqueshidden value=%s>""" % noofques)
+            self.response.out.write("""<input type=hidden name=supportusercommenthidden value=%s>""" % supportusrcmmnt)
             self.response.out.write("""<br><br><input type="submit" value="Create Survey"><input type="reset" value="Clear Form"></form>""")
             self.response.out.write("</body></html>")
         else:
@@ -229,6 +237,7 @@ class Create3(webapp2.RequestHandler):
             self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
             self.response.out.write('Creating Survey:- ')
             surveyname=cgi.escape(self.request.get('surveynamehidden'))
+            supportusrcmmnt=cgi.escape(self.request.get('supportusercommenthidden'))
             self.response.out.write(surveyname)
             #surveykeylist=db.GqlQuery("SELECT * "
             #                "FROM SurveyList "
@@ -256,7 +265,12 @@ class Create3(webapp2.RequestHandler):
             #self.response.out.write("<br>Hi %sabc" % useimages)
             for cntr in range(1,noofques+1):
               currentquesno="question" + str(cntr)
-              surveyquestion=Survey(question=cgi.escape(self.request.get(currentquesno)),surveyid=surveyname)
+              if supportusrcmmnt=="n":
+                  surveyquestion=Survey(question=cgi.escape(self.request.get(currentquesno)),surveyid=surveyname,usercomment=supportusrcmmnt)
+              elif supportusrcmmnt=="y":
+                  #currentcmmntno="usrcmmntq" + str(cntr)
+                  #usrcmmnt=cgi.escape(self.request.get(currentcmmntno))
+                  surveyquestion=Survey(question=cgi.escape(self.request.get(currentquesno)),surveyid=surveyname,usercomment=supportusrcmmnt)
               if useimages == "n":                  
                   for innercntr in range(1,noofoptions+1):
                       currentoption="q"+str(cntr)+"option" + str(innercntr)
@@ -276,6 +290,7 @@ class Create3(webapp2.RequestHandler):
                         surveyquestion.optionpic = db.Blob(optionpic)
                 #self.response.headers['Content-Type'] = "image/png"
                 #self.response.out.write(surveyquestion.optionpic)
+                surveyquestion.supportusercomment=db.StringProperty(supportusrcmmnt)
                 surveyquestion.put()
                 
                 
@@ -327,7 +342,7 @@ class Vote2(webapp2.RequestHandler):
             self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
             self.response.out.write("""<br><br><br><br><br><br>""")
             surveyname1 = self.request.get('surveyname')
-            self.response.out.write("Viewing survey:- %s" % surveyname1)
+            self.response.out.write("Voting on survey:- %s" % surveyname1)
             questionlist = db.GqlQuery("SELECT * "
                                 "FROM Survey "
                                 "WHERE surveyid=:1 ", surveyname1)
@@ -355,6 +370,8 @@ class Vote2(webapp2.RequestHandler):
                 if alreadythere==0:        
                     self.response.out.write("<br><input type=radio name=oq%s value=%s>%s</input>" % (j,cntr1.options[i-1],cntr1.options[i-1]))
                 i+=1
+              if cntr1.usercomment and cntr1.usercomment=="y":
+                  self.response.out.write("<br>Write your comments about this question here:- <input type=text name=usrcmmntq%s><br>" % j)
               j+=1
               
             #self.response.out.write("<input type=hidden name=hiddennoofques value=%s>" % count(questionlist))
@@ -389,8 +406,10 @@ class Vote3(webapp2.RequestHandler):
             for crntques in questionlist:
                 duplicatevote=0
                 currentvote=Votes(voter=user, surveyid=surveyname1, question=crntques.question)
+                cmnt="usrcmmntq"+str(j)
+                currentvote.usrcomment=cgi.escape(self.request.get(cmnt))
                 oq="oq"+str(j)
-                currentvote.chosenoption=self.request.get(oq)
+                currentvote.chosenoption=cgi.escape(self.request.get(oq))
                 oldquery=db.GqlQuery("SELECT * "
                                      "FROM Votes "
                                      "WHERE surveyid=:1 AND voter=:2 AND question=:3 AND chosenoption=:4 ", surveyname1, user, crntques.question, self.request.get(oq))
@@ -398,7 +417,7 @@ class Vote3(webapp2.RequestHandler):
                 for count9 in oldquery:
                   if currentvote.chosenoption != "" and currentvote.surveyid==count9.surveyid and currentvote.voter==count9.voter and currentvote.question==count9.question and currentvote.chosenoption==count9.chosenoption:
                       if duplicateoccuredever==0:
-                          self.response.out.write("<center><h3> If you changed your vote then it has gone through. But I have detected that you are trying to vote multiple times for the same option.  I'm sorry, %s. I'm afraid I can't let you do this.<br> So those votes I won't count again.</h3>" % user.nickname())
+                          self.response.out.write("<center><h3> If you changed your vote then it has gone through. But I have detected that you are trying to vote multiple times for the same option.  I'm sorry, %s. I'm afraid I can't let you do this.<br> <br>So those votes I won't count again.</h3>" % user.nickname())
                           self. response.out.write("These questions you tried to vote the same option multiple times.")
                       self.response.out.write("<br> %s"% currentvote.question)
                       duplicatevote=1
@@ -469,6 +488,7 @@ class Result2(webapp2.RequestHandler):
             #votescollection[0]=0
             #votescollection = []
             for ques in questionlist:
+              oncecommentshown=0
               self.response.out.write("<br><br>Q:- %s" % ques.question)
               #for cntr in range(1,len(ques.options)+1):
               #  votescollection[cntr]=0
@@ -485,6 +505,14 @@ class Result2(webapp2.RequestHandler):
                       votescollection.append(1)
                 self.response.out.write("<br>%s %s" % (crntoption, len(votescollection)))
                 i+=1
+                
+              for crntvote1 in votelist:
+                  if crntvote1.question==ques.question:
+                    if crntvote1.usrcomment:
+                        if oncecommentshown==0:
+                            self.response.out.write("<br><br>User comments for this question are:- ")
+                            oncecommentshown=1
+                        self.response.out.write("<br>%s" % crntvote1.usrcomment)
               
             
             votecount=0
