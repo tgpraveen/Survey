@@ -3,17 +3,20 @@ import datetime
 import urllib
 import webapp2
 
+import datetime
+
 from google.appengine.ext import db
 from google.appengine.api import users
 import webapp2
 
 from google.appengine.api import users
 
-class SurveyList(db.Model):
+class SurveyList(db.Expando):
   creator = db.UserProperty()
   name = db.StringProperty()
   #content = db.StringProperty(multiline=True)
   date = db.DateTimeProperty(auto_now_add=True)
+  expirydate = db.DateTimeProperty()
   
 class Survey(db.Expando):
   surveyid = db.StringProperty()
@@ -25,8 +28,7 @@ class Votes(db.Expando):
   surveyid = db.StringProperty()
   voter = db.UserProperty()
   question = db.StringProperty()
-  chosenoption = db.StringProperty()
-
+  chosenoption = db.StringProperty()  
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
@@ -35,8 +37,9 @@ class MainPage(webapp2.RequestHandler):
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")   
             
-            self.response.out.write("""<div align=right>Search:-<form name='searchform' action='/search1' method='POST'><input type='text' name='searchkeyword'></form><div>""") 
+            self.response.out.write("""<form name='searchform' action='/search1' method='POST'><div align=right><h3>Search for a survey:- <br><input type='text' name='searchword'><br><input type='submit' value='Search'> </h3></div></form>""") 
             
             self.response.out.write("""<br><br><br><br><br><br><div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
             <a href='/create1'><h3>Create a new survey.</h3></a></div></style>""")
@@ -65,11 +68,15 @@ class Create1(webapp2.RequestHandler):
         if user:
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
-            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
             self.response.out.write("""<form name=createform1 action="/create2" method="post">
             Enter the survey name:- <input type="text" name=surveyname>
             <br>Will you be using images as any of your survey answers? <input type=radio name=useimages value="n" checked> No
             <input type=radio name=useimages value="y"> Yes
+            <br> Set an expiry date:- <input type=radio name=expires value="n" checked> No
+            <input type=radio name=expires value="y"> Yes
             <br>Number of questions? <input type="text" name=noofques>
             <br>Number of options for each question? <input type="text" name=noofoptionsperques>
             
@@ -86,6 +93,7 @@ class Create2(webapp2.RequestHandler):
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s<br><br>" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
             surveyname =cgi.escape(self.request.get('surveyname'))
             dbsurveys = db.GqlQuery("SELECT * "
                             "FROM SurveyList ")
@@ -105,11 +113,81 @@ class Create2(webapp2.RequestHandler):
             noofques = int(cgi.escape(self.request.get('noofques')))
             noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
             useimages = cgi.escape(self.request.get('useimages'))
+            expires = cgi.escape(self.request.get('expires'))
             self.response.out.write("""<form name=createform2 action="/create3" enctype="multipart/form-data" method="post">""")
             #if noofques==6:
              # self.response.out.write(range(noofques))
             #else:
              # self.response.out.write("Hey"+noofques)
+            self.response.out.write("""<input type=hidden name=expireshidden value=%s>""" % expires)
+            if expires=="y":
+              self.response.out.write("""<br>Enter number of days and hours till expiry of survey:- 
+              <table border="0" cellspacing="0" >
+              <tr>
+              </td><td align=left> 
+              Days<select name='day'>
+              <option value='01'>01</option>
+              <option value='02'>02</option>
+              <option value='03'>03</option>
+              <option value='04'>04</option>
+              <option value='05'>05</option>
+              <option value='06'>06</option>
+              <option value='07'>07</option>
+              <option value='08'>08</option>
+              <option value='09'>09</option>
+              <option value='10'>10</option>
+              <option value='11'>11</option>
+              <option value='12'>12</option>
+              <option value='13'>13</option>
+              <option value='14'>14</option>
+              <option value='15'>15</option>
+              <option value='16'>16</option>
+              <option value='17'>17</option>
+              <option value='18'>18</option>
+              <option value='19'>19</option>
+              <option value='20'>20</option>
+              <option value='21'>21</option>
+              <option value='22'>22</option>
+              <option value='23'>23</option>
+              <option value='24'>24</option>
+              <option value='25'>25</option>
+              <option value='26'>26</option>
+              <option value='27'>27</option>
+              <option value='28'>28</option>
+              <option value='29'>29</option>
+              <option value='30'>30</option>
+              <option value='31'>31</option>
+              </select>
+
+
+              </td><td align=left>
+              Hours<select name='hours'>
+              <option value='00'>00</option>
+              <option value='01'>01</option>
+              <option value='02'>02</option>
+              <option value='03'>03</option>
+              <option value='04'>04</option>
+              <option value='05'>05</option>
+              <option value='06'>06</option>
+              <option value='07'>07</option>
+              <option value='08'>08</option>
+              <option value='09'>09</option>
+              <option value='10'>10</option>
+              <option value='11'>11</option>
+              <option value='12'>12</option>
+              <option value='13'>13</option>
+              <option value='14'>14</option>
+              <option value='15'>15</option>
+              <option value='16'>16</option>
+              <option value='17'>17</option>
+              <option value='18'>18</option>
+              <option value='19'>19</option>
+              <option value='20'>20</option>
+              <option value='21'>21</option>
+              <option value='22'>22</option>
+              <option value='23'>23</option>
+              </select>
+              </td></table>""")
             self.response.out.write("<h5> For those options where you are going to use images, don't write anything in the textbox AND upload the file using 'Choose file' option.</h5>")
             for quesno in range(1,noofques+1):
               self.response.out.write("""Question %s:- <input type=text name=question%s><br>""" % (quesno,quesno))                        
@@ -148,6 +226,7 @@ class Create3(webapp2.RequestHandler):
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s<br><br>" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
             self.response.out.write('Creating Survey:- ')
             surveyname=cgi.escape(self.request.get('surveynamehidden'))
             self.response.out.write(surveyname)
@@ -161,6 +240,19 @@ class Create3(webapp2.RequestHandler):
             useimages=cgi.escape(self.request.get('useimageshidden'))
             noofques=int(cgi.escape(self.request.get('noofqueshidden')))
             noofoptions=int(cgi.escape(self.request.get('noofoptionshidden')))
+            expires=cgi.escape(self.request.get('expireshidden'))
+            if expires=="y":
+                currentsurvey = db.GqlQuery("SELECT * "
+                                "FROM SurveyList "
+                                 "WHERE name=:1", surveyname)
+                #year=int(cgi.escape(self.request.get('year')))
+                #month=int(cgi.escape(self.request.get('month')))
+                day1=int(cgi.escape(self.request.get('day')))
+                hours1=int(cgi.escape(self.request.get('hours')))
+                for cntr6 in currentsurvey:
+                    cntr6.expirydate=cntr6.date+datetime.timedelta(days=day1, hours=hours1)
+                    cntr6.put()
+                
             #self.response.out.write("<br>Hi %sabc" % useimages)
             for cntr in range(1,noofques+1):
               currentquesno="question" + str(cntr)
@@ -185,8 +277,8 @@ class Create3(webapp2.RequestHandler):
                 #self.response.headers['Content-Type'] = "image/png"
                 #self.response.out.write(surveyquestion.optionpic)
                 surveyquestion.put()
-
-
+                
+                
                 pict = db.GqlQuery("SELECT * "
                                 "FROM Survey ")
                 for pictcntr in pict:
@@ -194,7 +286,7 @@ class Create3(webapp2.RequestHandler):
                     #Not working above inserting/showing pics.        
                     #greet = db.get(self.request.get(pictcntr.key()))
                     #self.response.out.write(greet.question)
-            self.response.out.write("<h3>Survey created. <a href='/Create3'>Click here to go back.</a></h3>")
+            self.response.out.write("<h3>Survey created. <a href='/'>Click here to go back.</a></h3>")
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
@@ -205,14 +297,21 @@ class Vote(webapp2.RequestHandler):
         if user:
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
-            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
+            currentdatetime=datetime.datetime.now()
             surveylist = db.GqlQuery("SELECT * "
-                                "FROM SurveyList")
+                                "FROM SurveyList ")
 
             self.response.out.write("<center>Please select from one of the following surveys:-")
             #self.response.out.write("<form name=voteform1 action='/voteform2'>")
             for cntr in surveylist:
-              self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+              if cntr.expirydate:
+                if cntr.expirydate>currentdatetime:
+                    self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+              if not cntr.expirydate:
+                  self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
             self.response.out.write("</center>")            
             self.response.out.write("</body></html>")
         else:
@@ -224,7 +323,9 @@ class Vote2(webapp2.RequestHandler):
         if user:
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
-            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
             surveyname1 = self.request.get('surveyname')
             self.response.out.write("Viewing survey:- %s" % surveyname1)
             questionlist = db.GqlQuery("SELECT * "
@@ -270,7 +371,9 @@ class Vote3(webapp2.RequestHandler):
         if user:
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
-            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
             surveyname1 = self.request.get('hiddensurveyname')
             #noofques = self.request.get('hiddennoofques')
             questionlist = db.GqlQuery("SELECT * "
@@ -329,7 +432,9 @@ class Result1(webapp2.RequestHandler):
         if user:
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
-            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
             surveylist = db.GqlQuery("SELECT * "
                                 "FROM SurveyList")
             self.response.out.write("<h2>Viewing Results</h2>")
@@ -348,7 +453,9 @@ class Result2(webapp2.RequestHandler):
         if user:
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
-            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
             self.response.out.write("<div align=right><br><a href='/'> Click here to go to main menu.</a></div>")
             self.response.out.write("<h2>Viewing Results</h2>")
             surveyname=self.request.get('surveyname')
@@ -393,7 +500,9 @@ class Edit1(webapp2.RequestHandler):
         if user:
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
-            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
             surveylist = db.GqlQuery("SELECT * "
                                 "FROM SurveyList "
                                 "WHERE creator=:1 ", user)
@@ -413,7 +522,9 @@ class Edit2(webapp2.RequestHandler):
         if user:
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
-            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
             self.response.out.write("<div align=right><br><a href='/'> Click here to go to main menu.</a></div>")
             #self.response.out.write("<h2>Viewing Results</h2>")
             surveyname=self.request.get('surveyname')
@@ -502,6 +613,7 @@ class Edit3(webapp2.RequestHandler):
             greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
             self.response.out.write("<html><body>%s<br><br>" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
             self.response.out.write('Modifying Survey:- ')
             surveyname=cgi.escape(self.request.get('surveynamehidden'))
             self.response.out.write(surveyname)
@@ -562,7 +674,9 @@ class AdminEdit1(webapp2.RequestHandler):
         if user:
             greeting = ("Welcome, %s! I know you are a <h3>ADMINISTRATOR</h3> (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
-            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
             surveylist = db.GqlQuery("SELECT * "
                                 "FROM SurveyList ")
             self.response.out.write("<h2>Selecting Survey to edit.</h2>")
@@ -579,14 +693,54 @@ class Search1(webapp2.RequestHandler):
     def post(self):
         user = users.get_current_user()
         if user:
-            greeting = ("Welcome, %s! I know you are a <h3>ADMINISTRATOR</h3> (<a href=\"%s\">sign out</a>)" %
+            greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
                         (user.nickname(), users.create_logout_url("/")))
-            self.response.out.write("<html><body>%s<br><br><br><br><br><br>" % greeting)
-            self.response.out.write("<br><h2>Search:- </h2>")
-            searchword=cgi.escape(self.response.get('searchword'))
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
+            self.response.out.write("""<form name='searchform' action='/search1' method='POST'><div align=right><h3>Search again for a survey:- <br><input type='text' name='searchword'><br><input type='submit' value='Search'> </h3></div></form>""")
+            self.response.out.write("<h2>Search results:- </h2><br>")
+            searchword=cgi.escape(self.request.get('searchword'))
+            dbsurveys = db.GqlQuery("SELECT * "
+                            "FROM SurveyList ")
+            searchcount = {}
+            sortsearchcount = {}
+
+            for cntr1 in dbsurveys:
+              survey9 = db.GqlQuery("SELECT * "
+                            "FROM Survey "
+                            "WHERE surveyid=:1", cntr1.name)
+              for cntr2 in survey9:
+                #self.response.out.write(cntr2.surveyid)
+                #if (searchcount["%s" % str(cntr2.surveyid)]==null):
+                  searchcount[cntr2.surveyid]=0
+                    
+            for cntr1 in dbsurveys:
+              survey = db.GqlQuery("SELECT * "
+                            "FROM Survey "
+                            "WHERE surveyid=:1", cntr1.name)
+              for cntr2 in survey:
+                #self.response.out.write(cntr2.surveyid)
+                #if (searchcount["%s" % str(cntr2.surveyid)]==null):
+                    #searchcount["%s" % str(cntr2.surveyid)]=0
+                searchcount[cntr2.surveyid]+=cntr2.question.count(searchword)
+                for abcd in cntr2.options:
+                    searchcount[cntr2.surveyid]+=abcd.count(searchword)
+            self.response.out.write("<center>")
+            #for srchcntr in searchercount:
+            found=0
+            for key, value in sorted(searchcount.iteritems(), key=lambda (k,v): (v,k)):
+                sortsearchcount[key]=value
+                #if (value > 0):
+                 #   self.response.out.write("<br> %s is %s" % (key, value))
+            for k, v in sortsearchcount.iteritems():
+                if (v != 0):
+                   self.response.out.write("<br><a href='/vote2?surveyname=%s'>%s</a> has %s occuring %s times." % (k, k, searchword, v))
+                   found=1
+            if found==0:
+              self.response.out.write("<h2>No search results found. Search for some other term using the search box above.</h2>")
             
-            
-            self.response.out.write("</body></html>")
+            self.response.out.write("</center></body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
     
