@@ -28,7 +28,12 @@ class Votes(db.Expando):
   surveyid = db.StringProperty()
   voter = db.UserProperty()
   question = db.StringProperty()
-  chosenoption = db.StringProperty()  
+  chosenoption = db.StringProperty()
+  date = db.DateTimeProperty(auto_now_add=True)
+
+class Friends(db.Expando):
+  user1 = db.StringProperty()
+  friends = db.StringListProperty()
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
@@ -53,6 +58,9 @@ class MainPage(webapp2.RequestHandler):
             self.response.out.write("""<div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
             <a href='/result1'><h3>View results of the surveys.</h3></a></div></style>""")
 
+            self.response.out.write("""<div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
+            <a href='/friend1'><h3>View/Add Friends</h3></a></div></style>""")
+
             if user.nickname()=="test@example.com":
               self.response.out.write("""<br><br><br><br><br><br><div style="float:left;"><h2>Special ADMINISTRATOR Section :- </h2></div></style>""")
               self.response.out.write("""<br><br><br><br><br><br><div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
@@ -61,6 +69,81 @@ class MainPage(webapp2.RequestHandler):
             self.response.out.write("</body></html>") 
         else:
             self.redirect(users.create_login_url(self.request.uri))
+            
+class Friend1(webapp2.RequestHandler):
+    def get(self):
+        user = users.get_current_user()
+        if user:
+            greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
+                        (user.nickname(), users.create_logout_url("/")))
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
+            self.response.out.write("<h3><a href='/addfriend1'>Add friends</a></h3>")
+            
+            currentfriends=db.GqlQuery("SELECT * "
+                            "FROM Friends "
+                            "WHERE user=:1", user)
+            initialwritten=0
+                           
+            for cntr1 in currentfriends:
+                for cntr2 in cntr1.friends:
+                    if initialwritten==0:
+                        self.response.out.write("<br> Current friends:- <br>")
+                        initialwritten=1
+                    self.response.out.write("<br>%s" % cntr2)
+            if initialwritten==0:
+              self.response.out.write("It seems you have not added any friends till now. Click the above button to add a few friends. then you can share surveys with only your friends.")
+            self.response.out.write("</body></html>")
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
+
+class AddFriend1(webapp2.RequestHandler):
+    def get(self):
+        user = users.get_current_user()
+        if user:
+            greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
+                        (user.nickname(), users.create_logout_url("/")))
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
+            #self.response.out.write("""<h3>To add more friends.</h3>""")
+            self.response.out.write("""<br>Leave the field blank if you don't want to add so many friends.<br>""")
+            self.response.out.write("""<form name=addfriend1form action="/addfriend2" enctype="multipart/form-data" method="post">""")
+            self.response.out.write("""<br>Enter email address of friend 1 <input type=text name=addfriendno1>""")
+            self.response.out.write("""<br>Enter email address of friend 2 <input type=text name=addfriendno2>""")
+            self.response.out.write("""<br>Enter email address of friend 3 <input type=text name=addfriendno3>""")
+            self.response.out.write("""<br><br><input type="submit" value="Add friends"><input type="reset" value="Clear Form"></form>""")
+            self.response.out.write("</body></html>")
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
+
+class AddFriend2(webapp2.RequestHandler):
+    def post(self):
+        user = users.get_current_user()
+        if user:
+            greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
+                        (user.nickname(), users.create_logout_url("/")))
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
+            #self.response.out.write("""<h3>To add more friends.</h3>""")                                       
+            friend1=cgi.escape(self.request.get('addfriendno1'))
+            friend2=cgi.escape(self.request.get('addfriendno2'))
+            friend3=cgi.escape(self.request.get('addfriendno3'))
+            #self.response.out.write("<br>%s" % friend1)
+            #self.response.out.write("<br>%s" % friend2)
+            #self.response.out.write("<br>%s" % friend3)
+            addfriend=Friends(user1=user.nickname())
+            addfriend.friends.append(friend1)
+            addfriend.friends.append(friend2)
+            addfriend.friends.append(friend3)
+            addfriend.put()
+            self.response.out.write("""<h3>Operation completed successfully. <br><br> To add more friends:- <a href='addfriend1'>Click here</a></h3>""")
+            self.response.out.write("</body></html>")
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
+
         
 class Create1(webapp2.RequestHandler):
     def get(self):
@@ -73,6 +156,10 @@ class Create1(webapp2.RequestHandler):
             self.response.out.write("""<br><br><br><br><br><br>""")
             self.response.out.write("""<form name=createform1 action="/create2" method="post">
             Enter the survey name:- <input type="text" name=surveyname>
+            <br>Only allow friends to vote on this survey?<input type=radio name=restrictvote value="n" checked> No
+            <input type=radio name=restrictvote value="y"> Yes
+            <br>Only allow friends to view the results of this survey? <input type=radio name=restrictresultsview value="n" checked> No
+            <input type=radio name=restrictresultsview value="y"> Yes
             <br>Will you be using images as any of your survey answers? <input type=radio name=useimages value="n" checked> No
             <input type=radio name=useimages value="y"> Yes
             <br> Set an expiry date:- <input type=radio name=expires value="n" checked> No
@@ -97,6 +184,10 @@ class Create2(webapp2.RequestHandler):
             self.response.out.write("<html><body>%s<br><br>" % greeting)
             self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
             surveyname =cgi.escape(self.request.get('surveyname'))
+
+            rtvote=cgi.escape(self.request.get('restrictvote'))
+            rtresultsview=cgi.escape(self.request.get('restrictresultsview'))
+            
             dbsurveys = db.GqlQuery("SELECT * "
                             "FROM SurveyList ")
             
@@ -106,7 +197,7 @@ class Create2(webapp2.RequestHandler):
                 self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM>")
                 return;
                 
-            newsurvey=SurveyList(creator = users.get_current_user(),name=surveyname)
+            newsurvey=SurveyList(creator = users.get_current_user(),name=surveyname,restrictvote=rtvote,restrictresultsview=rtresultsview)
             newsurvey.put()
             #self.response.out.write("Done")
             
@@ -117,6 +208,8 @@ class Create2(webapp2.RequestHandler):
             useimages = cgi.escape(self.request.get('useimages'))
             expires = cgi.escape(self.request.get('expires'))
             supportusrcmmnt=cgi.escape(self.request.get('supportusercomment'))
+            
+            
             self.response.out.write("""<form name=createform2 action="/create3" enctype="multipart/form-data" method="post">""")
             #if noofques==6:
              # self.response.out.write(range(noofques))
@@ -324,9 +417,30 @@ class Vote(webapp2.RequestHandler):
             for cntr in surveylist:
               if cntr.expirydate:
                 if cntr.expirydate>currentdatetime:
+                  if cntr.restrictvote=="y":
+                    friendsofsurveycreator=db.GqlQuery("SELECT * "
+                                                       "FROM Friends "
+                                                       "WHERE user1=:1",cntr.creator.nickname())
+                    for qwe1 in friendsofsurveycreator:
+                        for qwe in qwe1.friends:
+                          if qwe==user.nickname() or user.nickname()==cntr.creator.nickname():
+                              self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+                              break
+                  if cntr.restrictvote=="n":
                     self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
               if not cntr.expirydate:
-                  self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+                if cntr.restrictvote=="y":
+                    friendsofsurveycreator=db.GqlQuery("SELECT * "
+                                                       "FROM Friends "
+                                                       "WHERE user1=:1",cntr.creator.nickname())
+                    for qwe1 in friendsofsurveycreator:
+                        for qwe in qwe1.friends:
+                          if qwe==user.nickname() or user.nickname()==cntr.creator.nickname():
+                              self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+                              break
+                if cntr.restrictvote=="n":
+                    self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+                  
             self.response.out.write("</center>")            
             self.response.out.write("</body></html>")
         else:
@@ -460,7 +574,20 @@ class Result1(webapp2.RequestHandler):
             self.response.out.write("<center>Please select from one of the following surveys:-")
             #self.response.out.write("<form name=voteform1 action='/voteform2'>")
             for cntr in surveylist:
-              self.response.out.write("<br><a href='/result2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+              if cntr.restrictresultsview=="y":
+                    friendsofsurveycreator=db.GqlQuery("SELECT * "
+                                                       "FROM Friends "
+                                                       "WHERE user1=:1",cntr.creator.nickname())
+                    for qwe1 in friendsofsurveycreator:
+                        for qwe in qwe1.friends:
+                          if qwe==user.nickname() or user.nickname()==cntr.creator.nickname():
+                              self.response.out.write("<br><a href='/result2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+                              break
+              if cntr.restrictresultsview=="n":
+                    self.response.out.write("<br><a href='/result2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+                    
+                    
+              
             self.response.out.write("</center>")            
             self.response.out.write("</body></html>")
         else:
@@ -787,5 +914,8 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/edit2',Edit2),
                                ('/edit3',Edit3),
                                ('/adminedit1',AdminEdit1),
-                               ('/search1', Search1)],
+                               ('/search1', Search1),
+                               ('/friend1', Friend1),
+                               ('/addfriend1', AddFriend1),
+                               ('/addfriend2', AddFriend2)],
                               debug=True)
