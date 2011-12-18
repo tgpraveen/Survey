@@ -85,7 +85,7 @@ class Friend1(webapp2.RequestHandler):
             
             currentfriends=db.GqlQuery("SELECT * "
                             "FROM Friends "
-                            "WHERE user=:1", user)
+                            "WHERE user1=:1", user.nickname())
             initialwritten=0
                            
             for cntr1 in currentfriends:
@@ -137,11 +137,15 @@ class AddFriend2(webapp2.RequestHandler):
             #self.response.out.write("<br>%s" % friend2)
             #self.response.out.write("<br>%s" % friend3)
             addfriend=Friends(user1=user.nickname())
-            addfriend.friends.append(friend1)
-            addfriend.friends.append(friend2)
-            addfriend.friends.append(friend3)
+            if friend1!="":
+                addfriend.friends.append(friend1)
+            if friend2!="":
+                addfriend.friends.append(friend2)
+            if friend3!="":
+                addfriend.friends.append(friend3)
             addfriend.put()
-            self.response.out.write("""<h3>Operation completed successfully. <br><br> To add more friends:- <a href='addfriend1'>Click here</a></h3>""")
+            self.response.out.write("""<h3>Operation completed successfully. <br><br> To add more friends:- <a href='/addfriend1'>Click here</a></h3>""")
+            self.response.out.write("""<h3>To view your friends:- <a href='/friend1'>Click here</a></h3>""")
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
@@ -162,8 +166,6 @@ class Create1(webapp2.RequestHandler):
             <input type=radio name=restrictvote value="y"> Yes
             <br>Only allow friends to view the results of this survey? <input type=radio name=restrictresultsview value="n" checked> No
             <input type=radio name=restrictresultsview value="y"> Yes
-            <br>Will you be using images as any of your survey answers? <input type=radio name=useimages value="n" checked> No
-            <input type=radio name=useimages value="y"> Yes
             <br> Set an expiry date:- <input type=radio name=expires value="n" checked> No
             <input type=radio name=expires value="y"> Yes
             <br> Support user comments?:- <input type=radio name=supportusercomment value="n" checked> No
@@ -207,7 +209,9 @@ class Create2(webapp2.RequestHandler):
             self.response.out.write(cgi.escape(self.request.get('surveyname')))
             noofques = int(cgi.escape(self.request.get('noofques')))
             noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
+            #self.response.out.write("No. of options is %s" % noofoptions)
             useimages = cgi.escape(self.request.get('useimages'))
+            useimages="n"
             expires = cgi.escape(self.request.get('expires'))
             supportusrcmmnt=cgi.escape(self.request.get('supportusercomment'))
             
@@ -293,12 +297,12 @@ class Create2(webapp2.RequestHandler):
                     self.response.out.write("<div style='float:right'>User can enter comment for each question.</style></div>")
               if useimages=="n":                        
                 for optionno in range(1,noofoptions+1):
-                  self.response.out.write("""Option %s:- <input type=text name=q%soption%s><br>""" % (optionno,quesno,optionno))
+                    self.response.out.write("""Option %s:- <input type=text name=q%soption%s><br>""" % (optionno,quesno,optionno))
               
                 self.response.out.write("<br><br>")
               elif useimages=="y":
                 for optionno in range(1,noofoptions+1):
-                  self.response.out.write("""<pre>Option %s:- <input type=text name=q%soption%s>            <input type="file" name=q%soptionfile%s/><br></pre>""" % (optionno,quesno,optionno,quesno,optionno))
+                    self.response.out.write("""<pre>Option %s:- <input type=text name=q%soption%s>            <input type="file" name=q%soptionfile%s/><br></pre>""" % (optionno,quesno,optionno,quesno,optionno))
                   
                 self.response.out.write("<br><br>")
             self.response.out.write("""<input type=hidden name=surveynamehidden value='%s'>""" % (surveyname))
@@ -720,6 +724,7 @@ class Edit2(webapp2.RequestHandler):
             #self.response.out.write("Done")
             
             self.response.out.write('Modifying Survey:- ')
+            self.response.out.write('To delete a question just make the question text as blank.')
             self.response.out.write(cgi.escape(self.request.get('surveyname')))
             #noofques = int(cgi.escape(self.request.get('noofques')))
             #noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
@@ -797,7 +802,8 @@ class Edit3(webapp2.RequestHandler):
                       #self.response.out.write("<br>Hi %s" % currentoption)
                       surveyquestion.options.append(cgi.escape(self.request.get(currentoption)))
                   #self.response.out.write("<br>eoq")
-                  surveyquestion.put()
+                  if surveyquestion.question!="":
+                      surveyquestion.put()
               elif useimages == "y":
                 for innercntr in range(1,noofoptions+1):
                       currentoption="q"+str(cntr)+"option" + str(innercntr)
@@ -873,6 +879,7 @@ class Search1(webapp2.RequestHandler):
                   searchcount[cntr2.surveyid]=0
                     
             for cntr1 in dbsurveys:
+              searchcount[cntr1.name]+=cntr1.name.count(searchword)
               survey = db.GqlQuery("SELECT * "
                             "FROM Survey "
                             "WHERE surveyid=:1", cntr1.name)
@@ -892,7 +899,7 @@ class Search1(webapp2.RequestHandler):
                  #   self.response.out.write("<br> %s is %s" % (key, value))
             for k, v in sortsearchcount.iteritems():
                 if (v != 0):
-                   self.response.out.write("<br><a href='/vote2?surveyname=%s'>%s</a> has %s occuring %s times." % (k, k, searchword, v))
+                   self.response.out.write("<br><a href='/vote2?surveyname=%s'>%s</a> has your search word:- %s occuring %s times." % (k, k, searchword, v))
                    found=1
             if found==0:
               self.response.out.write("<h2>No search results found. Search for some other term using the search box above.</h2>")
