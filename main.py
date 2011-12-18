@@ -4,6 +4,7 @@ import urllib
 import webapp2
 
 import datetime
+import time
 
 from google.appengine.ext import db
 from google.appengine.api import users
@@ -209,20 +210,36 @@ class Create2(webapp2.RequestHandler):
             self.response.out.write('Creating Survey:- ')
             self.response.out.write("""<br>""")
             self.response.out.write(cgi.escape(self.request.get('surveyname')))
+            
             erroroccured=0
-            if cgi.escape(self.request.get('noofques')):
-                noofques = int(cgi.escape(self.request.get('noofques')))
-            else:
+            if not cgi.escape(self.request.get('noofques')):
+                #noofques = int(cgi.escape(self.request.get('noofques')))
+            
                 self.response.out.write("""<br>No. of questions can't be blank.""")
                 erroroccured=1
-            if self.request.get('noofoptionsperques'):
-                noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
-            else:
+            if not self.request.get('noofoptionsperques'):
+                #noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
+            
                 self.response.out.write("""<br>No. of options per question can't be blank.""")
                 erroroccured=1
             if erroroccured==1:
               self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM><br>")
               return
+            erroroccured1=0
+            try:
+                noofques = int(cgi.escape(self.request.get('noofques')))
+            except ValueError:
+                self.response.out.write("""<br>No. of questions has to be a integer.""")
+                erroroccured1=1
+            try:
+                noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
+            except ValueError:
+                self.response.out.write("""<br>No. of options per question has to be a integer.""")
+                erroroccured1=1
+            if erroroccured1==1:
+              self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM><br>")
+              return
+
             #self.response.out.write("No. of options is %s" % noofoptions)
             useimages = cgi.escape(self.request.get('useimages'))
             useimages="n"
@@ -304,7 +321,7 @@ class Create2(webapp2.RequestHandler):
               <option value='23'>23</option>
               </select>
               </td></table>""")
-            self.response.out.write("<h5> For those options where you are going to use images, don't write anything in the textbox AND upload the file using 'Choose file' option.</h5>")
+            #self.response.out.write("<h5> For those options where you are going to use images, don't write anything in the textbox AND upload the file using 'Choose file' option.</h5>")
             for quesno in range(1,noofques+1):
               self.response.out.write("""Question %s:- <input type=text name=question%s><br>""" % (quesno,quesno))
               if supportusrcmmnt=="y":
@@ -591,6 +608,7 @@ class Result1(webapp2.RequestHandler):
             surveylist = db.GqlQuery("SELECT * "
                                 "FROM SurveyList")
             self.response.out.write("<h2>Viewing Results</h2>")
+            self.response.out.write("<h3><div style='float:right'><a href='/popularityresult1'>Arrange Surveys by Popularity. (by votes being cast weighted towards more recent events) </style></div></h3><br><br>")
             self.response.out.write("<center>Please select from one of the following surveys:-")
             #self.response.out.write("<form name=voteform1 action='/voteform2'>")
             for cntr in surveylist:
@@ -612,6 +630,91 @@ class Result1(webapp2.RequestHandler):
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
+
+class PopularityResult1(webapp2.RequestHandler):    
+    def get(self):
+        user = users.get_current_user()
+        if user:
+            greeting = ("Welcome, %s! (<a href=\"%s\">sign out</a>)" %
+                        (user.nickname(), users.create_logout_url("/")))
+            self.response.out.write("<html><body>%s" % greeting)
+            self.response.out.write("""<div style="float:right"><a href='/'> Main page </a> | <a href='/create1'> Create survey </a> | <a href='/edit1'> Edit Survey </a> | <a href='/vote'> Vote on survey </a> |  <a href='/result1'> Result </a></style></div>""")
+            self.response.out.write("""<br><br><br><br><br><br>""")
+            surveylist = db.GqlQuery("SELECT * "
+                                "FROM SurveyList")
+            self.response.out.write("<h2>Viewing Results <u><i>by Popularity</i></u></h2>")
+            self.response.out.write("<center>Please select from one of the following surveys:-")
+            #self.response.out.write("<form name=voteform1 action='/voteform2'>")
+            
+            popularitysurveys={}
+            sortpopularitysurveys={}
+            
+            for cntr in surveylist:
+              if cntr and cntr.restrictresultsview and cntr.restrictresultsview=="y":
+                    friendsofsurveycreator=db.GqlQuery("SELECT * "
+                                                       "FROM Friends "
+                                                       "WHERE user1=:1",cntr.creator.nickname())
+                    for qwe1 in friendsofsurveycreator:
+                        for qwe in qwe1.friends:
+                          if qwe==user.nickname() or user.nickname()==cntr.creator.nickname():
+                              #self.response.out.write("<br><a href='/result2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+                              popularitysurveys[cntr.name]=0.0
+                              break
+              if cntr and cntr.restrictresultsview and cntr.restrictresultsview=="n":
+                    #self.response.out.write("<br><a href='/result2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+                    popularitysurveys[cntr.name]=0.0
+              
+            
+            dbsurveys = db.GqlQuery("SELECT * "
+                            "FROM SurveyList ")
+                 
+            for cntr1 in dbsurveys:
+              votes = db.GqlQuery("SELECT * "
+                                   "FROM Votes "
+                                   "WHERE surveyid=:1",cntr1.name)
+              
+              #survey = db.GqlQuery("SELECT * "
+              #              "FROM Survey "
+              #              "WHERE surveyid=:1", cntr1.name)
+              for cntr2 in votes:
+                #self.response.out.write(cntr2.surveyid)
+                #if (searchcount["%s" % str(cntr2.surveyid)]==null):
+                    #searchcount["%s" % str(cntr2.surveyid)]=0
+                """date_time1=datetime.datetime.now()
+                date_time2 = date_time1.isoformat().split('.')[0].replace('T',' ')
+                pattern = '%Y-%m-%d %H:%M:%S'
+                sss_s_epoc1 = int(time.mktime(time.strptime(date_time2, pattern)))
+                
+                date_time4=cntr2.date
+                date_time3 = date_time4.isoformat().split('.')[0].replace('T',' ')
+                pattern = '%Y-%m-%d %H:%M:%S'
+                sss_s_epoc2 = int(time.mktime(time.strptime(date_time3, pattern)))"""
+                popularitysurveys[cntr1.name]+=float(1/(float((datetime.datetime.now()-cntr2.date).total_seconds())))
+                #searchcount[cntr2.surveyid]+=cntr2.question.count(searchword)
+                #for abcd in cntr2.options:
+                #   searchcount[cntr2.surveyid]+=abcd.count(searchword)
+            self.response.out.write("<center>")
+            #for srchcntr in searchercount:
+            #found=0
+            for key, value in sorted(popularitysurveys.iteritems(), key=lambda (k,v): (v,k)):
+                sortpopularitysurveys[key]=value
+                #if (value > 0):
+                 #   self.response.out.write("<br> %s is %s" % (key, value))
+            for k, v in sortpopularitysurveys.iteritems():
+                #if (v != 0):
+                   self.response.out.write("<br><a href='/result2?surveyname=%s'> %s </a>" % (k, k))
+                   #found=1
+            #if found==0:
+            #  self.response.out.write("<h2>No search results found. Search for some other term using the search box above.</h2>")  
+            
+                    
+              
+            self.response.out.write("</center>")            
+            self.response.out.write("</body></html>")
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
+
+
 
 class Result2(webapp2.RequestHandler):
     def get(self):
@@ -938,6 +1041,7 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/vote2', Vote2),
                                ('/vote3', Vote3),
                                ('/result1', Result1),
+                               ('/popularityresult1', PopularityResult1),
                                ('/result2',Result2),
                                ('/edit1',Edit1),
                                ('/edit2',Edit2),
