@@ -701,6 +701,7 @@ class Edit2(webapp2.RequestHandler):
             #                    "FROM Survey "
             #                    "WHERE surveyid=:1 ", surveyname)
             noofques=0
+            noofoptions=0
             for cnts in questionlist:
               noofques+=1
             #self.response.out.write("Hey folks! %s" % noofques)
@@ -729,6 +730,8 @@ class Edit2(webapp2.RequestHandler):
             #noofques = int(cgi.escape(self.request.get('noofques')))
             #noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
             #useimages = cgi.escape(self.request.get('useimages'))
+            if noofques==0:
+              self.response.out.write("""<h2>There were no questions found for this survey. go to create a new survey and create a new one and this time do add some questions please!</h2>""")
             self.response.out.write("""<form name=editform3 action="/edit3" enctype="multipart/form-data" method="post">""")
             #if noofques==6:
              # self.response.out.write(range(noofques))
@@ -816,7 +819,8 @@ class Edit3(webapp2.RequestHandler):
                         surveyquestion.optionpic = db.Blob(optionpic)
                 #self.response.headers['Content-Type'] = "image/png"
                 #self.response.out.write(surveyquestion.optionpic)
-                surveyquestion.put()
+                if surveyquestion.question!="":
+                      surveyquestion.put()
 
 
                 pict = db.GqlQuery("SELECT * "
