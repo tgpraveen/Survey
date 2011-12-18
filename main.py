@@ -202,13 +202,27 @@ class Create2(webapp2.RequestHandler):
                 return;
                 
             newsurvey=SurveyList(creator = users.get_current_user(),name=surveyname,restrictvote=rtvote,restrictresultsview=rtresultsview)
-            newsurvey.put()
+            if newsurvey.name!="":
+                newsurvey.put()
             #self.response.out.write("Done")
             
             self.response.out.write('Creating Survey:- ')
+            self.response.out.write("""<br>""")
             self.response.out.write(cgi.escape(self.request.get('surveyname')))
-            noofques = int(cgi.escape(self.request.get('noofques')))
-            noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
+            erroroccured=0
+            if cgi.escape(self.request.get('noofques')):
+                noofques = int(cgi.escape(self.request.get('noofques')))
+            else:
+                self.response.out.write("""<br>No. of questions can't be blank.""")
+                erroroccured=1
+            if self.request.get('noofoptionsperques'):
+                noofoptions = int(cgi.escape(self.request.get('noofoptionsperques')))
+            else:
+                self.response.out.write("""<br>No. of options per question can't be blank.""")
+                erroroccured=1
+            if erroroccured==1:
+              self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM><br>")
+              return
             #self.response.out.write("No. of options is %s" % noofoptions)
             useimages = cgi.escape(self.request.get('useimages'))
             useimages="n"
@@ -732,6 +746,8 @@ class Edit2(webapp2.RequestHandler):
             #useimages = cgi.escape(self.request.get('useimages'))
             if noofques==0:
               self.response.out.write("""<h2>There were no questions found for this survey. go to create a new survey and create a new one and this time do add some questions please!</h2>""")
+              
+            
             self.response.out.write("""<form name=editform3 action="/edit3" enctype="multipart/form-data" method="post">""")
             #if noofques==6:
              # self.response.out.write(range(noofques))
