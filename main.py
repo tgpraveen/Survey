@@ -18,11 +18,13 @@ class SurveyList(db.Expando):
   date = db.DateTimeProperty(auto_now_add=True)
   expirydate = db.DateTimeProperty()
   
+  
 class Survey(db.Expando):
   surveyid = db.StringProperty()
   question = db.StringProperty()
   options =  db.StringListProperty()
   surveyoption = db.BlobProperty()
+  usercomment = db.StringProperty(default="n")
 
 class Votes(db.Expando):
   surveyid = db.StringProperty()
@@ -429,7 +431,7 @@ class Vote(webapp2.RequestHandler):
                   if cntr.restrictvote=="n":
                     self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
               if not cntr.expirydate:
-                if cntr.restrictvote=="y":
+                if cntr.restrictvote and cntr.restrictvote=="y":
                     friendsofsurveycreator=db.GqlQuery("SELECT * "
                                                        "FROM Friends "
                                                        "WHERE user1=:1",cntr.creator.nickname())
@@ -438,7 +440,7 @@ class Vote(webapp2.RequestHandler):
                           if qwe==user.nickname() or user.nickname()==cntr.creator.nickname():
                               self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
                               break
-                if cntr.restrictvote=="n":
+                if cntr.restrictvote and cntr.restrictvote=="n":
                     self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
                   
             self.response.out.write("</center>")            
@@ -574,7 +576,7 @@ class Result1(webapp2.RequestHandler):
             self.response.out.write("<center>Please select from one of the following surveys:-")
             #self.response.out.write("<form name=voteform1 action='/voteform2'>")
             for cntr in surveylist:
-              if cntr.restrictresultsview=="y":
+              if cntr and cntr.restrictresultsview and cntr.restrictresultsview=="y":
                     friendsofsurveycreator=db.GqlQuery("SELECT * "
                                                        "FROM Friends "
                                                        "WHERE user1=:1",cntr.creator.nickname())
@@ -583,7 +585,7 @@ class Result1(webapp2.RequestHandler):
                           if qwe==user.nickname() or user.nickname()==cntr.creator.nickname():
                               self.response.out.write("<br><a href='/result2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
                               break
-              if cntr.restrictresultsview=="n":
+              if cntr and cntr.restrictresultsview and cntr.restrictresultsview=="n":
                     self.response.out.write("<br><a href='/result2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
                     
                     
@@ -756,7 +758,7 @@ class Edit2(webapp2.RequestHandler):
             self.response.out.write("""<input type=hidden name=useimageshidden value=%s>""" % useimages)
             self.response.out.write("""<input type=hidden name=noofoptionshidden value=%s>""" % noofoptions)
             self.response.out.write("""<input type=hidden name=noofqueshidden value=%s>""" % noofques)
-            self.response.out.write("""<br><br><input type="submit" value="Modify Survey"><input type="reset" value="Clear Form"></form>""")
+            self.response.out.write("""<br><br><input type="submit" value="Modify Survey">""")
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
