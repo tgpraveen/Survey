@@ -522,7 +522,10 @@ class Vote2(webapp2.RequestHandler):
                     self.response.out.write("<br><input type=radio name=oq%s value=%s>%s</input>" % (j,cntr1.options[i-1],cntr1.options[i-1]))
                 i+=1
               if cntr1.usercomment and cntr1.usercomment=="y":
-                  self.response.out.write("<br>Write your comments about this question here:- <input type=text name=usrcmmntq%s><br>" % j)
+                  if voteiter and voteiter.usrcomment!="":
+                      self.response.out.write("<br>Write your comments about this question here:- <input type=text name=usrcmmntq%s value=%s><br>" % (j,voteiter.usrcomment))
+                  else:
+                      self.response.out.write("<br>Write your comments about this question here:- <input type=text name=usrcmmntq%s><br>" % j)
               j+=1
               
             #self.response.out.write("<input type=hidden name=hiddennoofques value=%s>" % count(questionlist))
