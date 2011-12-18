@@ -10,6 +10,7 @@ from google.appengine.ext import db
 from google.appengine.api import users
 import webapp2
 
+from google.appengine.api import mail
 from google.appengine.api import users
 
 class SurveyList(db.Expando):
@@ -502,12 +503,14 @@ class Vote2(webapp2.RequestHandler):
                                 
             i=1
             j=1
+            
             self.response.out.write("<form name=actualvote action='/vote3' method='POST'>")
             for cntr1 in questionlist:
               oldqueryvote=db.GqlQuery("SELECT * "
                                      "FROM Votes "
                                      "WHERE surveyid=:1 AND voter=:2 AND question=:3", surveyname1, user, cntr1.question)
               self.response.out.write("<br>Q:- %s" % cntr1.question)
+              
               i=1
               
               for cntr2 in cntr1.options:
@@ -521,10 +524,12 @@ class Vote2(webapp2.RequestHandler):
                 if alreadythere==0:        
                     self.response.out.write("<br><input type=radio name=oq%s value=%s>%s</input>" % (j,cntr1.options[i-1],cntr1.options[i-1]))
                 i+=1
+                
               if cntr1.usercomment and cntr1.usercomment=="y":
-                  if voteiter and voteiter.usrcomment!="":
-                      self.response.out.write("<br>Write your comments about this question here:- <input type=text name=usrcmmntq%s value=%s><br>" % (j,voteiter.usrcomment))
-                  else:
+                  try:
+                      if voteiter.usrcomment!="":
+                          self.response.out.write("<br>Write your comments about this question here:- <input type=text name=usrcmmntq%s value=%s><br>" % (j,voteiter.usrcomment))
+                  except:
                       self.response.out.write("<br>Write your comments about this question here:- <input type=text name=usrcmmntq%s><br>" % j)
               j+=1
               
@@ -532,6 +537,7 @@ class Vote2(webapp2.RequestHandler):
             self.response.out.write("<input type=hidden name=hiddensurveyname value=%s>" % surveyname1)
             self.response.out.write("<br><input type=submit value='Vote'><input type='reset' value='Clear Form'>")                
             self.response.out.write("</form>")
+            self.response.out.write("<br><br>PS:- I will email you your votes.")
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
@@ -557,6 +563,8 @@ class Vote3(webapp2.RequestHandler):
             j=1
             duplicatevote=0
             duplicateoccuredever=0
+            tomail=""
+            tomail+="%s \n \n" % (surveyname1)
             for crntques in questionlist:
                 duplicatevote=0
                 currentvote=Votes(voter=user, surveyid=surveyname1, question=crntques.question)
@@ -583,6 +591,7 @@ class Vote3(webapp2.RequestHandler):
                                      "WHERE surveyid=:1 AND voter=:2 AND question=:3 ", surveyname1, user, crntques.question)
                     for cntr9 in oldquery2:
                       db.delete(cntr9)
+                    tomail+="Q:- %s \nA:- %s \n%s \n" % (currentvote.question,currentvote.chosenoption,currentvote.usrcomment)
                     currentvote.put()
                 j=j+1
                 
@@ -590,10 +599,13 @@ class Vote3(webapp2.RequestHandler):
                   self.response.out.write("<h3>Click the button to go back.</a>")
                   self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM></center>")
                   return
-            self.response.out.write("<br>Voting done.<br><a href='/'> Click here to go to main menu.</a>")
+            self.response.out.write("<br>Voting done. Your votes have been emailed to you. <br><a href='/'> Click here to go to main menu.</a>")
+            mail.send_mail(sender="pt795@nyu.edu",
+                                   to=user.nickname(),
+                                   subject="Your survey votes",
+                                   body="""Dear User, Here are your votes for survey:- %s""" % tomail)
             
             
-
             
             self.response.out.write("</body></html>")
         else:
