@@ -65,7 +65,7 @@ class MainPage(webapp2.RequestHandler):
             self.response.out.write("""<div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
             <a href='/friend1'><h3>View/Add Friends</h3></a></div></style>""")
 
-            if user.nickname()=="test@example.com":
+            if user.nickname()=="kornj@cs.nyu.edu":
               self.response.out.write("""<br><br><br><br><br><br><div style="float:left;"><h2>Special ADMINISTRATOR Section :- </h2></div></style>""")
               self.response.out.write("""<br><br><br><br><br><br><div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
             <a href='/adminedit1'><h3>Edit the survey created by ANY user.</h3></a></div></style>""")
@@ -456,16 +456,17 @@ class Vote(webapp2.RequestHandler):
               if cntr.expirydate:
                 if cntr.expirydate>currentdatetime:
                   if cntr.restrictvote=="y":
+                    #abc
                     friendsofsurveycreator=db.GqlQuery("SELECT * "
                                                        "FROM Friends "
                                                        "WHERE user1=:1",cntr.creator.nickname())
                     for qwe1 in friendsofsurveycreator:
                         for qwe in qwe1.friends:
                           if qwe==user.nickname() or user.nickname()==cntr.creator.nickname():
-                              self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+                              self.response.out.write("<br><a href='/vote2?surveyname=%s'>%s</a> expires at %s." % (cntr.name,cntr.name, cntr.expirydate))
                               break
                   if cntr.restrictvote=="n":
-                    self.response.out.write("<br><a href='/vote2?surveyname=%s'> %s </a>" % (cntr.name,cntr.name))
+                    self.response.out.write("<br><a href='/vote2?surveyname=%s'>%s</a>  expires at %s." % (cntr.name,cntr.name, cntr.expirydate))
               if not cntr.expirydate:
                 if cntr.restrictvote and cntr.restrictvote=="y":
                     friendsofsurveycreator=db.GqlQuery("SELECT * "
@@ -535,9 +536,9 @@ class Vote2(webapp2.RequestHandler):
               
             #self.response.out.write("<input type=hidden name=hiddennoofques value=%s>" % count(questionlist))
             self.response.out.write("<input type=hidden name=hiddensurveyname value=%s>" % surveyname1)
-            self.response.out.write("<br><input type=submit value='Vote'><input type='reset' value='Clear Form'>")                
+            self.response.out.write("<br><br><input type=submit value='Vote'><input type='reset' value='Clear Form'>")                
             self.response.out.write("</form>")
-            self.response.out.write("<br><br>PS:- I will email you your votes.")
+            self.response.out.write("<br>PS:- I will email you your votes.")
             self.response.out.write("</body></html>")
         else:
             self.redirect(users.create_login_url(self.request.uri))
@@ -600,8 +601,8 @@ class Vote3(webapp2.RequestHandler):
                   self.response.out.write("<FORM><INPUT TYPE='button' VALUE='Back' onClick='history.go(-1);return true;'></FORM></center>")
                   return
             self.response.out.write("<br>Voting done. Your votes have been emailed to you. <br><a href='/'> Click here to go to main menu.</a>")
-            mail.send_mail(sender="pt795@nyu.edu",
-                                   to=user.nickname(),
+            mail.send_mail(sender="tgpraveen89@gmail.com",
+                                   to=user.email(),
                                    subject="Your survey votes",
                                    body="""Dear User, Here are your votes for survey:- %s""" % tomail)
             
