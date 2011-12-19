@@ -16,7 +16,6 @@ from google.appengine.api import users
 class SurveyList(db.Expando):
   creator = db.UserProperty()
   name = db.StringProperty()
-  #content = db.StringProperty(multiline=True)
   date = db.DateTimeProperty(auto_now_add=True)
   expirydate = db.DateTimeProperty()
   
