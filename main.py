@@ -16,6 +16,7 @@ from google.appengine.api import users
 class SurveyList(db.Expando):
   creator = db.UserProperty()
   name = db.StringProperty()
+  #content = db.StringProperty(multiline=True)
   date = db.DateTimeProperty(auto_now_add=True)
   expirydate = db.DateTimeProperty()
   
@@ -64,7 +65,7 @@ class MainPage(webapp2.RequestHandler):
             self.response.out.write("""<div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
             <a href='/friend1'><h3>View/Add Friends</h3></a></div></style>""")
 
-            if user.nickname()=="kornj@cs.nyu.edu":
+            if user.email()=="kornj@cs.nyu.edu":
               self.response.out.write("""<br><br><br><br><br><br><div style="float:left;"><h2>Special ADMINISTRATOR Section :- </h2></div></style>""")
               self.response.out.write("""<br><br><br><br><br><br><div style="float:left;text-align: center;background-image: url('/stylesheets/rounded_fixed.gif'); width: 228px; height: 160px; padding: 10px;">
             <a href='/adminedit1'><h3>Edit the survey created by ANY user.</h3></a></div></style>""")
